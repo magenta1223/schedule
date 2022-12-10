@@ -163,37 +163,53 @@
                         <!-- 배치를 할건데?
                         날짜 클릭 했자너
                         그럼 날짜 나오고
+                    
+                        노션 캘린더 참조! 
 
+                        constrained optimization 
 
-                        기존 로직대로
+                        given : date, H, room, n_s
+                        - date : user의 선택
+                        - H    : default는 전곡. 한 시간 당 곡 수를 선택하면 자동으로 결정.
+                            ex ) 전체 15곡에 한시간 당 3곡이면 H=5시간
+                        - room : 방 갯수
+                            ex ) 전체 20곡에 방 room=2개, 한 시간당 3곡이면 H=4시간씩 
+                        - n_s  : 한 시간 당 진행할 곡의 수. 
 
-                        일단 시간대별로 가능한 곡을 띄워줍니다. 이걸 참조하면서 곡을 넣으면 됨
-
-                        내가 하고싶은 시간을 입력하면
-
-                        아래처럼 띄워줌
-
-                        곡 chip을 마구 누르면 오른쪽에 드가는 시스템. 
-
-                        곡 최소시간 입력 시, 입력초과 
-
-                        한번이라도 들어갔으면 색을 다르게
+                        max 연속된 n시간안에 가능한 합주곡
+                        subject to 참여 인원의 스케쥴을 모두 만족
                         
-                        다 정하면 스케쥴 생성! 
-        
-    
-                        1시 ~ 3시      |
-                        곡 A, B, C     |
-                        -------------  | ----------------- 
-                        3시 ~ 6시      |
-                        곡 A, C, E     |
-            
-                        곡 여러번 누르면 카운트 올라가게 해서.. 
+                        dual problem
+                        
+                        min 참여인원의 스케쥴을 침해
+                        max 연속된 n시간안에 가능한 합주곡 
+
+                        1. date에서 참여 인원의 스케쥴 침해 최소화 : Done ! 
+                        - 모든 스케쥴을 체크, 가능한 곡들을 뽑음
+                        - 안와도 되는 사람이 있는지 확인 (optional)
+
+                        2. 그러면서 연속된 n시간안에 가능한 합주곡 최대화
+                        
+                        - step 1. s_t ~ s_{t+n} 를 count함. 각 곡 별로 가능한 횟수가 나오고, 이게 priority가 된다. 
+                        - step 2. s_t ~ s_{t+n}까지 순회하면서,
+                            - step 2-1) s_t의 priority를 체크.
+                            - step 2-2) s_t 중 priority가 작은 순서대로 곡을 투입 
+                            - step 2-3) 나머지 곡 중, 사람이 겹치지 않는 곡들을 추가. 역시 priority 순으로 모든 방을 채운다. 만약 채울 수 없다면, 비워둠.
+                            - step 2-4) 추가한 곡의 priority에 max(priority) 만큼을 추가. 
+                        - step 3. 이제 t~t+n 시점 까지 배치된 unique한 곡의 개수를 센다. 이게 가장 큰 시간대로 정하면 됨. 
+
+                        
+                        3. 그리고 뭐.. 시간 안에서 변경 정도가 추천사항 ? 
+
+
+                        - 그러면 방이 여러개인 경우가 general, 1개인 경우가 여러개인 경우의 special case가 되겠네요.
+
+                        
+                    
                         
                         
 
-                        
-                        
+                
                          -->
                     </v-container>
                     <!-- 일단 되는 사람 다 불러오고 -->
@@ -431,10 +447,6 @@ export default {
             let availableSongs = Array()
             
                 // 탐색의 범위를 줄이기 위해. 일부라도 가능하면.. 
-
-
-                // let availableUsers = this.getAvailableUsers(date)
-
             
             for (let j in this.project.songs){
                 let song = this.project.songs[j]
@@ -494,56 +506,51 @@ export default {
 
         }, 
 
-        getAvailableUsers : function(date){
+        
 
-            let users = new Set()
-            users; date;
-
-            date = new Date(date)
+        getAvailableSongs : function(date){
             
-            for (let i in this.project.songs){
-                let players = this.project.songs[i].players
-                let breakpoint = false
-                for (let j in players){
-                    let events = players[j].user.events
-                    for (let k in events){
-                        let event = events[k]
-                        let start = new Date(event.start)
-                        let end = new Date(event.end)
+            // 탐색의 범위를 줄이기 위해. 일부라도 가능하면.. 
+            
+            // - step 1. s_t ~ s_{t+n} 를 count함. 각 곡 별로 가능한 횟수가 나오고, 이게 priority가 된다. : Done
+            // - step 2. s_t ~ s_{t+n}까지 순회하면서,
+            //     - step 2-1) s_t의 priority를 체크.
+            //     - step 2-2) s_t 중 priority가 작은 순서대로 곡을 투입 
+            //     - step 2-3) 나머지 곡 중, 사람이 겹치지 않는 곡들을 추가. 역시 priority 순으로 모든 방을 채운다. 만약 채울 수 없다면, 비워둠.
+            //     - step 2-4) 추가한 곡의 priority에 max(priority) 만큼을 추가. 
+            // - step 3. 이제 t~t+n 시점 까지 배치된 unique한 곡의 개수를 센다. 이게 가장 큰 시간대로 정하면 됨. 
 
+            let songs = {...this.project.songs}.map((song) => {
+                song.priority = 0
+                return song
+            })
 
-                        if (event.allDay){
-                            if (start <= date && end >= date){
-                                // allday 1일 찍어놓으면 시작과 끝이 같음.
-                                // 겹치면 ? 일정이 있음! 
-                                breakpoint = true
-                                break
-                            }
-                        } else {
-                            if (start <= date && end > date){
-                                // allday 1일 찍어놓으면 시작과 끝이 같음.
-                                breakpoint = true
-                                break
-                            }    
-                        }
-                    }
-                    // 무사히 루프를 빠져나오면?
-                    if (!breakpoint){
-                        users.add(players[j])
-                        breakpoint = false
+            let availableSongs = {}
+            for (let t = this.timeRange[0]; t < this.timeRange[1]; t++){
+                availableSongs[t] = Array()
+            }
+            
+            // step 1. s_t ~ s_{t+n} 를 count함. 각 곡 별로 가능한 횟수가 나오고, 이게 priority가 된다. : Done
+            for (let j in songs){
+                let song = songs[j]
+                
+                for (let t = this.timeRange[0]; t < this.timeRange[1]; t++) {
+                    if(this.isAvailableAt(song, date, t)){
+                        song.priority ++;
+                        availableSongs[t].push(song)
                     }
                 }
             }
-            console.log(users)
-
-
-        }, 
-
-        getAvailableSongs : function(availableUsers){
-            // 
             
-            availableUsers;
-            let availableSongs = Array()
+            // step 2. s_t ~ s_{t+n}까지 순회하면서,
+
+            
+
+
+                // 2) song. 루프 돌기전에 그 곡들을 먼저 체크. 하나라도 안되면 그날은 안되는 날.
+
+                
+            
             return availableSongs
             
         },
