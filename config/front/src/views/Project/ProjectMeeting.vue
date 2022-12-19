@@ -28,12 +28,6 @@
                 >
                 </v-btn>
             </v-col>
-            <v-col>
-                {{selectedDate}}
-            </v-col>
-            <v-col cols="2">
-                <v-btn @click="modal"> Add </v-btn>
-            </v-col>
         </v-row>
 
         <!-- CALENDAR -->
@@ -60,44 +54,10 @@
             </VueCal>
         </v-row>
 
-        <!-- CREATE DIALOG -->
-        <v-row>
-            <v-dialog v-model ="openAdd" class="justify-center align-center" transition="dialog-bottom-transition">
-                <v-card width="600px">
-                    <v-card-title>
-                        Add Events 
-                    </v-card-title>
-                    <v-card-text>DE</v-card-text>
-                    <v-row class="ma-2">
-                        <v-text-field
-                        v-model="newEvent.title"
-                        label="Title"
-                        >
-                        </v-text-field>
-                    </v-row>
-                    <v-row class="ma-2">
-                        <v-textarea
-                        v-model="newEvent.content"
-                        label="Title"
-                        >
-                        </v-textarea>
-                    </v-row>
-                    <div class="ma-2">
-                        <Datepicker v-model="newDate" range />
-                    </div>
-
-                    <v-card-actions>
-                        <v-btn color="primary"  variant="outlined" width="100%" @click="createEvent">
-                            Add Events! 
-                        </v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-dialog>
-        </v-row>
-        
         <!-- RETRIEVE DIALOG -->
+
         <v-row>
-            <v-dialog v-model ="openRetrieve" class="justify-center align-center" transition="dialog-bottom-transition">
+            <v-dialog v-model ="openRetrieve" fullscreen :scrim="false" class="justify-center align-center" transition="dialog-bottom-transition">
                 <v-card v-if="isPrivate" width="600px" >
                     <v-card-title>
                         Update Events
@@ -137,7 +97,37 @@
                     <v-card-text>
                         {{selectedEvent.content}}
                     </v-card-text>
-
+                    <EasyDataTable
+                        :headers="headers"
+                        :items="selectedEvent.blocks"
+                        table-class-name="customize-table"
+                        show-index
+                        body-text-direction ="center"
+                        header-text-direction = "center"
+                        :hide-rows-per-page="true"
+                    >
+                    <template #item-artist="{song}">
+                        {{song.artist}}
+                    </template>
+                    <template #item-Vocal="{song}">
+                        {{song.Vocal}}
+                    </template>
+                    <template #item-Guitar1="{song}">
+                        {{song.Guitar1}}
+                    </template>
+                    <template #item-Guitar2="{song}">
+                        {{song.Guitar2}}
+                    </template>
+                    <template #item-Bass="{song}">
+                        {{song.Bass}}
+                    </template>
+                    <template #item-Drum="{song}">
+                        {{song.Drum}}
+                    </template>
+                    <template #item-Keyboard="{song}">
+                        {{song.Keyboard}}
+                    </template>
+                    </EasyDataTable>
 
                     <!-- <v-card-actions class="justify-space-around">
                         <v-btn color="primary" width="25%"  variant="outlined" @click="updateEvent">
@@ -176,7 +166,7 @@ let privateUrl = "http://127.0.0.1:8000/api/private/";  // 장고 drf 서버 주
 
 
 export default {
-    name: 'MyCalendar',
+    name: 'ProjectMeeting',
 
     components: {
         VueCal,
@@ -240,25 +230,7 @@ export default {
 
             },
 
-            events: [
-                {
-                    id : 1,
-                    author : 1,
-                    start: '2022-11-26 14:00',
-                    end: '2022-11-26 17:30',
-                    title: 'Boring event',
-                    content: 'CEX',
-                    // split : 1
-                },
-                {
-                start: '2022-11-26 12:00',
-                end: '2022-11-26 14:00',
-                title: '합주',
-                class: 'meeting',
-                background: true,
-                // split : 2
-                },
-            ],
+            events:[],
 
             // add events
             openAdd : false,
@@ -275,7 +247,21 @@ export default {
             openRetrieve : false,
             selectedEvent : {},
             selectedEDate : [],
-            isPrivate : true
+            isPrivate : true,
+
+            headers : [
+                    {text : 'From', value : 'start'},
+                    {text : 'To', value : 'end'},
+                    {text : 'Artist', value : 'artist'},
+                    {text : 'Title', value : 'title'},
+                    {text : 'Vocal', value : 'Vocal'},
+                    {text : 'Guitar1', value : 'Guitar1'},
+                    {text : 'Guitar2', value : 'Guitar2'},
+                    {text : 'Bass', value : 'Bass'},
+                    {text : 'Drum', value : 'Drum'},
+                    {text : 'Keyboard', value : 'Keyboard'},
+            ],
+
         };
     },
 
@@ -318,18 +304,33 @@ export default {
             
             event.class = event.cls
             event.index = index
+        
+            // event.cls가 만약 public이면, schedule을 parse
+            // time table과 song으로 보여줘야 함. 
+
+
+
+
             return event
         },
         
         // list view
         getEvents : function(){
+            console.log({
+                    user_id : localStorage.getItem('user'),
+                    project_id : this.$route.query.project_id,
+                    type : 'public'
+                }
+
+            )
             axios({
                 method : "GET",
                 url : url,
                 headers : setToken(),
                 params : {
                     user_id : localStorage.getItem('user'),
-                    type : "base"
+                    project_id : this.$route.query.project_id,
+                    type : 'public'
                 }
             }).then((response) => {
                 // this.events.push( this.parseEvent(response.data.private))

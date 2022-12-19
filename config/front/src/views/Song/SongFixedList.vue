@@ -72,7 +72,7 @@ export default {
                     {text : 'Drum', value : 'Drum'},
                     {text : 'Keyboard', value : 'Keyboard'},
                     {text : 'Fixed', value : 'fix'},
-],
+            ],
             delFrom : "", // quit from song
             
             // positions

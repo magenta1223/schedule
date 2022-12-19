@@ -15,7 +15,7 @@
             <!-- {{heading}}
             color:'+weekdayHeadings[heading.heading.label].color
                         {{weekdayHeadings[heading.heading.label].short}}
- -->
+            -->
             <div :style="wdHeaderStyle(heading)">
                 {{wdHeaderText(heading)}}
             </div>

@@ -12,6 +12,7 @@ import RegisterUser from "@/views/Auth/RegisterUser.vue"
 import ProjectList from "@/views/Project/ProjectList.vue"
 import ProjectCreate from "@/views/Project/ProjectCreate.vue"
 import ProjectRetrieve from "@/views/Project/ProjectRetrieve.vue"
+import ProjectMeeting from "@/views/Project/ProjectMeeting.vue"
 
 // Manage
 import ProjectManage from "@/views/Project/Manage/ProjectManage.vue"
@@ -89,6 +90,12 @@ const routes = [
                 path: '/projects/',
                 name: 'song_fixed_list',
                 component: SongFixedList,
+            },
+            // ProjectMeeting
+            {
+                path: '/projects/',
+                name: 'project_meeting',
+                component: ProjectMeeting,
             },
 
         ]

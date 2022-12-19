@@ -159,58 +159,57 @@
 
 
                     <v-container v-else-if="dialogView==='arange'">
-                        <div class="text-h3">Time</div>
-                        <!-- 배치를 할건데?
-                        날짜 클릭 했자너
-                        그럼 날짜 나오고
-                    
-                        노션 캘린더 참조! 
 
-                        constrained optimization 
+                        <!-- 드래그 좋은데, drag를 막기가 어려움. 그냥 위아래 버튼 넣어서 하자 -->
+                        <!-- <table>
+                            <thead>
+                            <tr>
+                                <th scope="col">Time</th>
+                                <th scope="col">Index</th>
+                                <th scope="col">Sport</th>
+                                <th scope="col">Artist</th>
+                            </tr>
+                            </thead>
+                            <draggable v-model="draggableList" tag="tbody" item-key="song">
+                            <template #item="{element}">
+                                <tr>
+                                    <td scope="row">{{ element.time }}</td>
+                                    <td>{{ element.index }}</td>
+                                    <td>{{ element.song.title }}</td>
+                                    <td>{{ element.song.artist }}</td>
+                                </tr>
+                            </template>
+                            </draggable>
+                        </table> -->
 
-                        given : date, H, room, n_s
-                        - date : user의 선택
-                        - H    : default는 전곡. 한 시간 당 곡 수를 선택하면 자동으로 결정.
-                            ex ) 전체 15곡에 한시간 당 3곡이면 H=5시간
-                        - room : 방 갯수
-                            ex ) 전체 20곡에 방 room=2개, 한 시간당 3곡이면 H=4시간씩 
-                        - n_s  : 한 시간 당 진행할 곡의 수. 
 
-                        max 연속된 n시간안에 가능한 합주곡
-                        subject to 참여 인원의 스케쥴을 모두 만족
+                        <EasyDataTable
+                            :headers="headers"
+                            :items="getAvailableSongs()"
+                            table-class-name="customize-table"
+                            show-index
+                            body-text-direction ="center"
+                            header-text-direction = "center"
+                            :hide-footer="true"
+                            :hide-rows-per-page="true"
+                        >
+ 
+
+
+                            <template #item-song="{song}">
+                                <td>
+                                {{song.title}}
+                                </td>
+                            </template>
+                            <template #item-artist="{song}">
+                                <td>
+                                {{song.artist}}
+                                </td>
+                            </template>
+
+                        </EasyDataTable>
+                        <v-btn @click="createMeeting"> submit </v-btn>
                         
-                        dual problem
-                        
-                        min 참여인원의 스케쥴을 침해
-                        max 연속된 n시간안에 가능한 합주곡 
-
-                        1. date에서 참여 인원의 스케쥴 침해 최소화 : Done ! 
-                        - 모든 스케쥴을 체크, 가능한 곡들을 뽑음
-                        - 안와도 되는 사람이 있는지 확인 (optional)
-
-                        2. 그러면서 연속된 n시간안에 가능한 합주곡 최대화
-                        
-                        - step 1. s_t ~ s_{t+n} 를 count함. 각 곡 별로 가능한 횟수가 나오고, 이게 priority가 된다. 
-                        - step 2. s_t ~ s_{t+n}까지 순회하면서,
-                            - step 2-1) s_t의 priority를 체크.
-                            - step 2-2) s_t 중 priority가 작은 순서대로 곡을 투입 
-                            - step 2-3) 나머지 곡 중, 사람이 겹치지 않는 곡들을 추가. 역시 priority 순으로 모든 방을 채운다. 만약 채울 수 없다면, 비워둠.
-                            - step 2-4) 추가한 곡의 priority에 max(priority) 만큼을 추가. 
-                        - step 3. 이제 t~t+n 시점 까지 배치된 unique한 곡의 개수를 센다. 이게 가장 큰 시간대로 정하면 됨. 
-
-                        
-                        3. 그리고 뭐.. 시간 안에서 변경 정도가 추천사항 ? 
-
-
-                        - 그러면 방이 여러개인 경우가 general, 1개인 경우가 여러개인 경우의 special case가 되겠네요.
-
-                        
-                    
-                        
-                        
-
-                
-                         -->
                     </v-container>
                     <!-- 일단 되는 사람 다 불러오고 -->
                     <!-- 시간대, 곡 등을 조건을 걸어본다. 그에 맞춰서 disable되는 곡이나 사람이 생기겠지? -->
@@ -239,6 +238,8 @@ import {mdiArrowLeft, mdiArrowRight, mdiClose} from "@mdi/js"
 import setToken from "@/utils/auth.js"
 
 let url = "http://127.0.0.1:8000/api/project/";  // 장고 drf 서버 주소
+let meeting_url = "http://127.0.0.1:8000/api/meeting/";  // 장고 drf 서버 주소
+
 
 export default {
     name: 'YourComponent',
@@ -340,6 +341,17 @@ export default {
             selectedSongs : [],
 
             dialogView : 'condition',
+            sph : 3, // songs per hour,
+            selectedDateSchedule : "",
+            schedule : [],
+
+            headers : [
+                {text : 'Time', value : 'start'},
+                {text : 'Title', value : 'song'},
+                {text : 'Artist', value : 'artist'},
+            ],
+
+            users : []
 
         }
     },
@@ -506,13 +518,149 @@ export default {
 
         }, 
 
-        
+        priorityCompare : function(a, b){
+            if (a.priority < b.priority){
+                return -1
+            } else if (a.priority > b.priority){
+                return 1
+            } else {
+                return 0
+            }
+        },
 
-        getAvailableSongs : function(date){
+        priorityFunction : function(start, H, availableSongs, songs, date){
+
+
+           // priority는 구간별로 구해야 함./ 
+            for (let j in songs){
+                let song = songs[j]
+                for (let t = start; t < this.timeRange[1] - H; t++) {
+                    if(this.isAvailableAt(song, date, t)){
+                        song.priority ++; 
+                        console.log(song)
+                        break
+                    }
+                }
+            }
+
+
+            songs.sort(this.priorityCompare)
+            let maxPriority = songs[songs.length - 1].priority
+
+            // step 2. s_t ~ s_{t+n}까지 순회하면서,
+            // priority가 작은 순으로 곡을 투입
+            // let table = Array.from(Array(this.timeRange[1] - this.timeRange[0]), () => new Array(songs.length))
+            let schedule = Array()
+            let users = new Set()
+            let table = new Array(H).fill(0).map(() => new Array(songs.length).fill(0));
+
+            for (let t = start; t < start + H; t++) {
+
+                // console.log("now T : ", t )
+                // console.log("Range : ", Math.max(t - H - start, 0), t+H - start, H)
+                
+                let song_at_t = availableSongs[t]
+                
+                song_at_t.sort(this.priorityCompare)
+
+                let selected = song_at_t.splice(0, this.sph)
+
+                
+                selected.map((song, i) => {
+                    song.priority = song.priority + maxPriority
+                    
+                    for (let t_ = Math.max(t - H - start, 0); t_ < t+H - start; t_ ++ ){
+                        // console.log(t_, song, table[t_])
+                        table[t_][song.index] = 1
+                    } 
+                    song.players.map((player) => {
+                        // users.push(player.player.user.id)
+                        users.add(player.player.user.id)
+                    })
+
+                    let startTime = new Date(date)
+                    let endTime = new Date(date)
+
+                    startTime.setHours(t, this.sph * i)
+                    endTime.setHours(t, this.sph * (i+1))
+
+                    schedule.push({
+                        start : startTime,
+                        end : endTime,
+                        song : song
+                    })
+                })
+                
+                // schedule.push({
+                //     time : t,
+                //     songs : selected
+                // })
+                
+                // schedule[t] = song_at_t.splice(0, this.sph)
+                // - step 2-4) 추가한 곡의 priority에 max(priority) 만큼을 추가. 
+                // schedule[t].map((song) => {
+                //     song.priority = song.priority + maxPriority
+                    
+                //     for (let t_ = Math.max(t - H - start, 0); t_ < t+H - start; t_ ++ ){
+                //         console.log(t_, song, table[t_])
+                //         table[t_][song.index] = 1
+                //     } 
+                //     return song
+                // })
+
+            }
+            // 그냥 여기서 unique한 것만 세면 됨. 
+            // 그게 가장 큰걸 선택해서 박으면 됨 
+
+            // - step 3. 이제 t~t+n 시점 까지 배치된 unique한 곡의 개수를 센다. 이게 가장 큰 시간대로 정하면 됨. 
+            // 일일히 다 셀 필요가 없다. DP
+            // 시간별로 순회하면서, 곡-시간 테이블을 채운다
+            // s가 t에서 가능할 때, t-H ~ t+H 까지 전부 채움. 
+
+
+            let result = table.map((counts) => {
+
+                return counts.reduce((a, b) => a+b, 0)
+
+            }).reduce((a, b) => a+b, 0)
+
+
+            return [result, schedule, users]
+
+        },
+
+        getAvailableSongs : function(){
+
+            let date = this.selectedDateSchedule
             
             // 탐색의 범위를 줄이기 위해. 일부라도 가능하면.. 
             
-            // - step 1. s_t ~ s_{t+n} 를 count함. 각 곡 별로 가능한 횟수가 나오고, 이게 priority가 된다. : Done
+            // constrained optimization 
+
+            // given : date, H, room, n_s
+            // - date : user의 선택
+            // - H    : default는 전곡. 한 시간 당 곡 수를 선택하면 자동으로 결정.
+            //     ex ) 전체 15곡에 한시간 당 3곡이면 H=5시간
+            // - room : 방 갯수
+            //     ex ) 전체 20곡에 방 room=2개, 한 시간당 3곡이면 H=4시간씩 
+            // - n_s  : 한 시간 당 진행할 곡의 수. 
+
+            // max 연속된 n시간안에 가능한 합주곡
+            // subject to 참여 인원의 스케쥴을 모두 만족
+            
+            // dual problem
+            
+            // min 참여인원의 스케쥴을 침해
+            // max 연속된 n시간안에 가능한 합주곡 
+
+            // 1. date에서 참여 인원의 스케쥴 침해 최소화 : Done ! 
+            // - 모든 스케쥴을 체크, 가능한 곡들을 뽑음
+            // - 안와도 되는 사람이 있는지 확인 (optional)
+
+            // 2. 그러면서 연속된 n시간안에 가능한 합주곡 최대화
+            
+            // 아래는 t ~ t+n 사이에 최적 배치로직
+            // - step 1. s_t ~ s_{t+n} 를 count함. 각 곡 별로 가능한 횟수가 나오고, 이게 priority가 된다. 
             // - step 2. s_t ~ s_{t+n}까지 순회하면서,
             //     - step 2-1) s_t의 priority를 체크.
             //     - step 2-2) s_t 중 priority가 작은 순서대로 곡을 투입 
@@ -520,38 +668,88 @@ export default {
             //     - step 2-4) 추가한 곡의 priority에 max(priority) 만큼을 추가. 
             // - step 3. 이제 t~t+n 시점 까지 배치된 unique한 곡의 개수를 센다. 이게 가장 큰 시간대로 정하면 됨. 
 
-            let songs = {...this.project.songs}.map((song) => {
+            
+            // 3. 그리고 뭐.. 시간 안에서 변경 정도가 추천사항 ? 
+
+            let songs = this.project.songs
+
+            // console.log(songs)
+            songs = songs.map((song) => {
                 song.priority = 0
                 return song
             })
-
+            
             let availableSongs = {}
             for (let t = this.timeRange[0]; t < this.timeRange[1]; t++){
                 availableSongs[t] = Array()
             }
             
             // step 1. s_t ~ s_{t+n} 를 count함. 각 곡 별로 가능한 횟수가 나오고, 이게 priority가 된다. : Done
+            let songsCount = 0 /* eslint-disable */
+            
             for (let j in songs){
                 let song = songs[j]
-                
+                let counted = false
                 for (let t = this.timeRange[0]; t < this.timeRange[1]; t++) {
                     if(this.isAvailableAt(song, date, t)){
-                        song.priority ++;
                         availableSongs[t].push(song)
+                        if (!counted){
+                            songsCount ++;
+                            counted = true
+                        }
                     }
                 }
             }
             
-            // step 2. s_t ~ s_{t+n}까지 순회하면서,
-
+            // get hours required to complete all available songs
+            let H = parseInt(songsCount / this.sph) 
+            let remainder = songsCount % this.sph
+            if (remainder !== 0){
+                H ++;
+            }
             
 
+            // priority는 구간별로 구해야 함./ 
+                        
+            // 몇시부터 시작하는게 최적인지 나와버림.
+            let maxS = -1
 
-                // 2) song. 루프 돌기전에 그 곡들을 먼저 체크. 하나라도 안되면 그날은 안되는 날.
+            let meeting = {
+                schedules : "",
+                participants : "",
+                title : "test title",
+                content : "test content",
+                start : "",
+                end : "",
+            }
 
-                
-            
-            return availableSongs
+            for (let startHour = this.timeRange[0]; startHour < this.timeRange[1] - H; startHour ++){
+                let result= this.priorityFunction(startHour, H, availableSongs, songs, date)
+                if (result[0] > maxS){
+                    let start = new Date(date)
+                    let end = new Date(date)
+                    
+                    start.setHours(startHour)
+                    end.setHours(startHour + H)
+
+                    maxS = result[0]
+                    meeting.schedules = result[1]
+                    meeting.participants =  Array.from(result[2])
+                    
+                    
+                    meeting.start =  start
+                    meeting.end = end
+
+                }
+            }
+
+
+
+            // 이제 optimal T에서 schedule을 구하면 됨. priority funcitno에서 받아오자
+
+            this.meeting = meeting 
+
+            return meeting.schedules
             
         },
 
@@ -576,6 +774,36 @@ export default {
         arrangeView : function(date){
             console.log(date)
             this.dialogView = 'arange'
+            this.selectedDateSchedule = date
+        
+        },
+
+        log : function(input){
+            console.log(input)
+        },
+
+        createMeeting : function(){
+            this.schedule
+            axios({
+                method : "POST",
+                url : meeting_url,
+                headers : setToken(),
+                params : {
+                    user_id : localStorage.getItem('user'),
+                    project_id : this.$route.query.project_id ,
+                    // schedule : JSON.stringify(this.meeting.schedules),
+                    // participants : JSON.stringify(this.meeting.participants),
+                    meeting : JSON.stringify(this.meeting),
+                    action : "meeting"
+                }
+            }).then((response) => {
+                console.log(response)
+                
+            }).catch((error) => {
+                console.log("Failed to get retreival", error.response);
+            });
+
+
         }
     },
 

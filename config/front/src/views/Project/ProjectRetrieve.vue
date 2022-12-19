@@ -110,6 +110,7 @@ export default {
         setTabs : function(project_status){
 
             if (project_status === 'P'){
+                // prepare phase
                 this.tab_headers =  [
                     {text : 'Songs', value : 'song_list'},
                     {text : 'Create Song', value : 'song_create'},
@@ -117,19 +118,23 @@ export default {
                 return 'song_list'
 
             } else if(project_status === 'R') {
+                // ready phase
                 this.tab_headers =  [
                     {text : 'Set List', value : 'song_fixed_list'},
+                    {text : 'Meeting Schedules', value : 'project_meeting'},
                 ] 
                 return 'song_fixed_list'
 
                 
             } else if(project_status === 'O') {
+                // on-going phase
                 this.tab_headers =  [
                     {text : 'Set List', value : 'song_fixed_list'},
-
+                    {text : 'Meeting Schedules', value : 'project_meeting'},
                 ]   
                 return 'song_fixed_list' 
             } else {
+                // ended phase
                 this.tab_headers =  [
                     {text : 'Set List', value : 'song_fixed_list'},
                 ]         

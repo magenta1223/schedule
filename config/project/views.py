@@ -15,6 +15,9 @@ from .models import *
 # auth
 from authentication.models import User
 
+# event
+# from event.models import ProjectMeeting
+
 import json
 
 from .utils import *
@@ -94,6 +97,49 @@ class ProjectViewSet(viewsets.ModelViewSet):
         instance.status = params['status']
         instance.save()
         return Response(None, status= status.HTTP_200_OK)   
+
+    # def __schedule__(self, request, *args, **kwargs):
+    #     params = request.query_params
+    #     instance = get_object_or_404(Project, pk = params['project_id'])
+    #     author = get_object_or_404(User, pk = params['user_id'])
+
+        # title = "cex"
+        # content = "cex"
+        # participants = [0,1,2]
+        # project = 
+        
+        # project_meeting, created = ProjectMeeting.objects.get_or_create(
+            
+        #     author = author,
+        #     proeject = project
+        # )
+
+        # project_meeting.save()
+
+
+
+        # params = request.query_params
+        # participants = [int(p) for p in json.loads(params['participants'])]
+        # user = get_object_or_404(User, pk = params['user_id'])
+        # participants = self.userset.filter(
+        #     Q(id__in = participants)
+        # )
+        # print('event1!!!')
+        # event = BaseEvent(
+        #     author = user,
+        #     start = params['start'],
+        #     end = params['end'],
+        #     title = params['title'],
+        #     content = params['content'],
+        #     allDay = params['start'] == params['end']
+        # )
+        # event.save()
+        # event.participants.set(participants)
+        # event.save()
+        # event = BaseEventSerializer(event)
+        # return Response(event.data, status=status.HTTP_200_OK)
+
+
 
    
 

@@ -4,14 +4,12 @@ from .models import User # 선언한 모델 import
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken, SlidingToken, UntypedToken
 
-from event.serializers import BaseEventSerializer
+# from event.serializers import BaseEventSerializer
 
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(max_length = 20, write_only = True)
-    
-    events = BaseEventSerializer(many = True)
-
+    # events = BaseEventSerializer(many = True)
     class Meta:
         model = User  # 모델 설정
         fields = '__all__'  # 필드 설정

@@ -4,6 +4,8 @@ from . import views  # views.py import
 
 router = routers.DefaultRouter()  # DefaultRouter 설정
 router.register('event', views.BaseEventViewSet)  # ViewSet과 함께 user라는 router 등록
+router.register('private', views.PrivateViewset)  # ViewSet과 함께 user라는 router 등록
+router.register('meeting', views.PublicViewset)  # ViewSet과 함께 user라는 router 등록
 
 urlpatterns = [
     path('', include(router.urls)),
