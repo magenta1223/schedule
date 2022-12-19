@@ -68,7 +68,7 @@ import axios from "axios";
 
 
 let url = "http://127.0.0.1:8000/api/register/";
-// let url = "http://13.209.73.227/api/register/";
+// let url = "http://13.209.73.227:8000/api/register/";
 
 
 export default {
