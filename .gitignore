@@ -1,1 +1,5 @@
 config/front/node_modules
+
+
+config/**/*.pyc
+config/**/__pycache__
