@@ -3,3 +3,4 @@ config/front/node_modules
 
 config/**/*.pyc
 config/**/__pycache__
+config/**/db.sqlite3
